@@ -1,5 +1,5 @@
 .RECIPEPREFIX := >
-.PHONY: setup lint format typecheck test test-fast test-llm experiments figures results docs ui report preprint preprint-framework readme-figure clean
+.PHONY: setup lint format typecheck test test-fast test-llm experiments figures results docs ui report preprint preprint-framework readme-figure readme-results clean
 
 UV ?= uv
 PY := $(UV) run
@@ -52,6 +52,11 @@ readme-figure:
 > mkdir -p docs/preprint/build
 > cd docs/preprint && pdflatex -interaction=nonstopmode -halt-on-error -output-directory=build framework_loop_standalone.tex > /dev/null
 > pdftocairo -png -r 250 -singlefile docs/preprint/build/framework_loop_standalone.pdf docs/figures/fig_loop
+
+# The results figure of the README: held-out error against cost on the MuSiQue confirmatory questions.
+# It is drawn from the run records under results/, which are not in the repository.
+readme-results:
+> $(PY) python scripts/preprint_figures.py --name fig_results --out docs/figures --suite "confidence-weighted agreement=results/fx_musique_confirm2d_confagree"
 
 clean:
 > rm -rf .mypy_cache .ruff_cache .pytest_cache .hypothesis htmlcov .coverage
