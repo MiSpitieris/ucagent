@@ -1,0 +1,54 @@
+# Medium 2-hop run at K = 10 with the consistent final label (user decisions 2026-11-08: K = 10 on this suite only,
+# K' = K with the resample action off, containment as the final label). Same 200/200/200 questions, prompts, grids and
+# target as configs/musique_medium_contains.yaml; the cache already holds samples 0..4 of every prompt, so only the
+# five extra samples per hop (and any hop-2 prompt whose ten-sample commit differs from the five-sample one) are new
+# calls: about 6,600 to 7,100, two hours. Known before launch: the fit draws K' samples per train hop and the K = 5
+# fit already drew ten, so this run's K map is the K = 5 artifact's K' map, three levels (eps 0.047 for a unanimous
+# step, 0.382 for any other split, 0.667 when all ten differ; train hops 319 / 68 / 3). K = 10 therefore tests the
+# confident-error floor (unanimous-and-wrong train hops fall from 23 of 328 to 15 of 319), not the resolution of
+# the map. The resample is off because its effect table is fitted from the first K and the first K' of one draw and
+# is degenerate at K = K'; `budgeted` used resamples at K = 5 and is not comparable here. Predictions P1-P7 are in
+# docs/EXPERIMENTS.md, written before launch.
+kind: suite
+suite_id: musique_medium_k10_contains
+base:
+  run_id: musique_medium_k10_contains
+  seed: 0
+  task:
+    name: musique
+    data_dir: data/musique
+    n_steps: 2
+    n_distractors: 3
+    n_instances: {train: 200, calib: 200, test: 200}
+    offset: {calib: 120, test: 60}  # calibration 120..319 and test 60..259 of the seeded orders: never run, never inspected
+    seed: 0
+    render_relations: true
+    local_match: contains  # per-hop labels accept whole-word containment ("Foshan, Guangdong" for "Foshan")
+    final_match: contains  # the final answer is judged by the same rule as the hops (the strict exact-match number is printed alongside)
+  llm:
+    backend: "ollama:gpt-oss:20b"
+    K: 10
+    K_prime: 10  # equal to K: the resample is off (max_resamples 0), see the header
+    temperature: 0.7
+    model_kwargs: {reasoning: low, num_ctx: 8192, num_predict: 1024}
+  uq: {estimator: semantic_entropy, equivalence: normalized_contains}
+  risk: {propagation: weighted, influence: ones}
+  control:
+    alpha: 0.2
+    spending: linear
+    costs: {llm_call: 0.01, resample: 0.0, backtrack: 0.5, ask_human: 1.0, escalate: 10.0}
+    max_resamples: 0
+    max_backtracks: 1
+  oracle: {scope: local, p_h: 0.0, p_e: 0.0}
+  calibration: {method: ltt, delta: 0.1, pvalue: binomial}
+  limits: {max_llm_calls: 50000, max_concurrency: 4}
+policies:
+  none: null
+  final_gate: {kind: linear, min: 0.05, max: 0.60, points: 12}
+  per_step_eps: {kind: linear, min: 0.02, max: 0.40, points: 20}
+  marginal: {kind: linear, min: 0.02, max: 0.40, points: 20}
+  knowno: {kind: linear, min: 0.02, max: 0.30, points: 15}
+  budgeted: {kind: log, min: 0.5, max: 4.0, points: 9}
+  random_ask: {kind: linear, min: 0.0, max: 1.0, points: 11}
+seeds: [0]
+splits: [calib, test]

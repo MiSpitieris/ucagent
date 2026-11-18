@@ -1,0 +1,48 @@
+# Three-hop linear MuSiQue chains with gpt-oss:20b (overnight queue, user decision 2026-11-07 late evening).
+# The first real-model test of compounding over three steps: 60/60/60 of the 3hop1 questions (568 in dev),
+# same model options, prompts, labels, grids and target as the confirmatory 2-hop pass. Each hop shows its
+# own supporting paragraph plus three distractors, so prompts stay one hop long. Projected: about 5,000
+# calls, 1.5 hours.
+kind: suite
+suite_id: musique_3hop_gptoss
+base:
+  run_id: musique_3hop_gptoss
+  seed: 0
+  task:
+    name: musique
+    data_dir: data/musique
+    n_steps: 3
+    hops: [3]
+    linear_only: true  # MuSiQue's 3hop1 type: hop k references only hop k-1, which the on-track test assumes
+    n_distractors: 3
+    n_instances: {train: 60, calib: 60, test: 60}
+    seed: 0
+    render_relations: true
+    local_match: contains  # per-hop labels accept whole-word containment ("Foshan, Guangdong" for "Foshan"); the final answer stays exact match
+  llm:
+    backend: "ollama:gpt-oss:20b"
+    K: 5
+    K_prime: 10
+    temperature: 0.7
+    model_kwargs: {reasoning: low, num_ctx: 8192, num_predict: 1024}
+  uq: {estimator: semantic_entropy, equivalence: normalized_contains}
+  risk: {propagation: weighted, influence: ones}
+  control:
+    alpha: 0.2
+    spending: linear
+    costs: {llm_call: 0.01, resample: 0.0, backtrack: 0.5, ask_human: 1.0, escalate: 10.0}
+    max_resamples: 1
+    max_backtracks: 1
+  oracle: {scope: local, p_h: 0.0, p_e: 0.0}
+  calibration: {method: ltt, delta: 0.1, pvalue: binomial}
+  limits: {max_llm_calls: 50000, max_concurrency: 4}
+policies:
+  none: null
+  final_gate: {kind: linear, min: 0.05, max: 0.60, points: 12}
+  per_step_eps: {kind: linear, min: 0.02, max: 0.40, points: 20}
+  marginal: {kind: linear, min: 0.02, max: 0.40, points: 20}
+  knowno: {kind: linear, min: 0.02, max: 0.30, points: 15}
+  budgeted: {kind: log, min: 0.5, max: 4.0, points: 9}
+  random_ask: {kind: linear, min: 0.0, max: 1.0, points: 11}
+seeds: [0]
+splits: [calib, test]

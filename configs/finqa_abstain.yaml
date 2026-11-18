@@ -1,0 +1,38 @@
+# Abstention baseline on FinQA (read alongside F1-F10 as development): ask a human at a step whose committed
+# answer says it cannot answer. Same questions, fit and settings as configs/finqa_confagree.yaml; queued after
+# that suite, whose random asking caches every prompt the rule can trigger.
+kind: suite
+suite_id: finqa_abstain
+base:
+  run_id: finqa_abstain
+  seed: 0
+  task:
+    name: finqa
+    data_dir: data/finqa
+    n_steps: 2  # nominal (most programs); linear programs of 2 to 4 operations are kept
+    n_distractors: 6  # report facts shown beside the question's supporting facts
+    n_instances: {train: 600, calib: 200, test: 200}  # train: the fit pool; calib and test: seeded halves of dev + test
+    offset: {calib: 0, test: 0}
+    seed: 0
+  llm:
+    backend: "ollama:gpt-oss:20b"
+    K: 5
+    K_prime: 10
+    temperature: 0.7
+    model_kwargs: {reasoning: low, num_ctx: 8192, num_predict: 1024}
+  uq: {estimator: confidence_agreement, equivalence: numeric}  # numbers within 1 % are one answer
+  risk: {propagation: weighted, influence: ones}
+  control:
+    alpha: 0.2
+    spending: linear
+    costs: {llm_call: 0.01, resample: 0.0, backtrack: 0.5, ask_human: 1.0, escalate: 10.0}
+    max_resamples: 1
+    max_backtracks: 1
+  oracle: {scope: local, p_h: 0.0, p_e: 0.0}
+  calibration: {method: ltt, delta: 0.1, pvalue: binomial}
+  limits: {max_llm_calls: 105000, max_concurrency: 4}
+policies:
+  none: null
+  abstain_ask: {kind: linear, min: 0.0, max: 0.0, points: 1}  # no knob: one point
+seeds: [0]
+splits: [calib, test]

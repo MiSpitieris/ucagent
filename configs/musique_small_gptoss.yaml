@@ -1,0 +1,53 @@
+# MuSiQue (2-hop, answerable) with the stronger local model gpt-oss:20b (M12, user decision 2026-11-07).
+# Same questions, sample counts, target, costs and grids as configs/musique_small_ollama.yaml so the two
+# models are directly comparable; sub-questions are rendered as natural-language questions (task default).
+#
+# llm.model_kwargs go to ChatOllama and are part of the cache key:
+#   reasoning: low   gpt-oss thinks before answering; "low" keeps the thinking short. The thinking is
+#                    returned separately (reasoning_content) and never enters the cached reply.
+#   num_ctx: 8192    the shared server's default context is 49,152 tokens, which forced llama3.1:8b
+#                    into a CPU/GPU split at 0.26 calls/s; MuSiQue prompts are at most about 1,300 tokens.
+#   num_predict: 1024  a runaway cap, not a budget: thinking tokens count toward it, and a truncated
+#                    reply (done_reason=length) is logged as a warning by the cache wrapper.
+# temperature 0.7 as in the llama run (the model card's 1.0 is a follow-up sweep, not mixed in here).
+kind: suite
+suite_id: musique_small_gptoss
+base:
+  run_id: musique_small_gptoss
+  seed: 0
+  task:
+    name: musique
+    data_dir: data/musique
+    n_steps: 2
+    n_distractors: 3
+    n_instances: {train: 60, calib: 60, test: 60}
+    seed: 0
+    render_relations: true
+    local_match: contains  # per-hop labels accept whole-word containment ("Foshan, Guangdong" for "Foshan"); the final answer stays exact match
+  llm:
+    backend: "ollama:gpt-oss:20b"
+    K: 5
+    K_prime: 10
+    temperature: 0.7
+    model_kwargs: {reasoning: low, num_ctx: 8192, num_predict: 1024}
+  uq: {estimator: semantic_entropy, equivalence: normalized_contains}
+  risk: {propagation: weighted, influence: ones}
+  control:
+    alpha: 0.2
+    spending: linear
+    costs: {llm_call: 0.01, resample: 0.0, backtrack: 0.5, ask_human: 1.0, escalate: 10.0}
+    max_resamples: 1
+    max_backtracks: 1
+  oracle: {scope: local, p_h: 0.0, p_e: 0.0}
+  calibration: {method: ltt, delta: 0.1, pvalue: binomial}
+  limits: {max_llm_calls: 50000, max_concurrency: 4}
+policies:
+  none: null
+  final_gate: {kind: linear, min: 0.1, max: 1.0, points: 10}
+  per_step_eps: {kind: linear, min: 0.1, max: 1.0, points: 10}
+  marginal: {kind: linear, min: 0.1, max: 1.0, points: 10}
+  knowno: {kind: linear, min: 0.05, max: 0.95, points: 10}
+  budgeted: {kind: log, min: 0.25, max: 16.0, points: 7}
+  random_ask: {kind: linear, min: 0.0, max: 1.0, points: 11}
+seeds: [0]
+splits: [calib, test]

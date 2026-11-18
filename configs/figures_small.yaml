@@ -1,0 +1,7 @@
+# make figures: the CI-sized set behind the README figures (mock LLM, under 15 minutes on 8 workers).
+kind: pipeline
+pipeline_id: figures_small
+suite: suite_small.yaml
+reconverge_suite: synthetic_reconverge.yaml
+fig1: {ns: [1, 2, 3, 5, 8], n_train: 100, n_test: 100, seeds: [0]}
+out_dir: docs/figures

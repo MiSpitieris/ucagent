@@ -1,0 +1,44 @@
+# FinQA linear programs (one step per operation), disagreement: gated stage of the overnight queue (user decisions
+# 2026-11-08 night: runs only if the license checks out, MIT confirmed, and the smoke audit passes). Everything
+# except the task block and the clustering judge is frozen from configs/musique_confirm2_disagreement.yaml.
+# Predictions F1-F10 are written in docs/EXPERIMENTS.md before the stage is queued.
+kind: suite
+suite_id: finqa_disagreement
+base:
+  run_id: finqa_disagreement
+  seed: 0
+  task:
+    name: finqa
+    data_dir: data/finqa
+    n_steps: 2  # nominal (most programs); linear programs of 2 to 4 operations are kept
+    n_distractors: 6  # report facts shown beside the question's supporting facts
+    n_instances: {train: 600, calib: 200, test: 200}  # train: the fit pool; calib and test: seeded halves of dev + test
+    offset: {calib: 0, test: 0}
+    seed: 0
+  llm:
+    backend: "ollama:gpt-oss:20b"
+    K: 5
+    K_prime: 10
+    temperature: 0.7
+    model_kwargs: {reasoning: low, num_ctx: 8192, num_predict: 1024}
+  uq: {estimator: disagreement, equivalence: numeric}  # numbers within 1 % are one answer
+  risk: {propagation: weighted, influence: ones}
+  control:
+    alpha: 0.2
+    spending: linear
+    costs: {llm_call: 0.01, resample: 0.0, backtrack: 0.5, ask_human: 1.0, escalate: 10.0}
+    max_resamples: 1
+    max_backtracks: 1
+  oracle: {scope: local, p_h: 0.0, p_e: 0.0}
+  calibration: {method: ltt, delta: 0.1, pvalue: binomial}
+  limits: {max_llm_calls: 105000, max_concurrency: 4}
+policies:
+  none: null
+  final_gate: {kind: linear, min: 0.05, max: 0.60, points: 12}
+  per_step_eps: {kind: linear, min: 0.02, max: 0.60, points: 30}  # widened from 0.40: the 600-question fit's levels reach 0.55
+  marginal: {kind: linear, min: 0.02, max: 0.80, points: 40}  # widened from 0.40 for the same reason
+  knowno: {kind: linear, min: 0.02, max: 0.30, points: 15}
+  budgeted: {kind: log, min: 0.5, max: 4.0, points: 9}
+  random_ask: {kind: linear, min: 0.0, max: 1.0, points: 11}
+seeds: [0]
+splits: [calib, test]

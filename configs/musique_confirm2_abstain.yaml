@@ -1,0 +1,42 @@
+# Abstention baseline on MuSiQue fresh questions (development; after the external review of 2026-11-09): ask a
+# human at a step whose committed answer says it cannot answer (ABSTAIN_PATTERN in core/control/policies.py,
+# the review's diagnostic pattern, found after these runs). Same questions, fit and settings as
+# configs/musique_confirm2_confagree.yaml; every prompt the rule can trigger is cached, so it runs at zero calls.
+kind: suite
+suite_id: musique_confirm2_abstain
+base:
+  run_id: musique_confirm2_abstain
+  seed: 0
+  task:
+    name: musique
+    data_dir: data/musique
+    n_steps: 2
+    n_distractors: 3
+    n_instances: {train: 600, calib: 200, test: 200}  # train indices 0..599 of the seeded order (200..599 never used before)
+    offset: {calib: 320, test: 260}  # calibration 320..519 and test 260..459 of the seeded orders: fresh for this confirmatory run
+    seed: 0
+    render_relations: true
+    local_match: contains  # per-hop labels accept whole-word containment ("Foshan, Guangdong" for "Foshan")
+    final_match: contains  # the final answer is judged by the same rule as the hops (the strict exact-match number is printed alongside)
+  llm:
+    backend: "ollama:gpt-oss:20b"
+    K: 5
+    K_prime: 10
+    temperature: 0.7
+    model_kwargs: {reasoning: low, num_ctx: 8192, num_predict: 1024}
+  uq: {estimator: confidence_agreement, equivalence: normalized_contains}
+  risk: {propagation: weighted, influence: ones}
+  control:
+    alpha: 0.2
+    spending: linear
+    costs: {llm_call: 0.01, resample: 0.0, backtrack: 0.5, ask_human: 1.0, escalate: 10.0}
+    max_resamples: 1
+    max_backtracks: 1
+  oracle: {scope: local, p_h: 0.0, p_e: 0.0}
+  calibration: {method: ltt, delta: 0.1, pvalue: binomial}
+  limits: {max_llm_calls: 105000, max_concurrency: 4}
+policies:
+  none: null
+  abstain_ask: {kind: linear, min: 0.0, max: 0.0, points: 1}  # no knob: one point
+seeds: [0]
+splits: [calib, test]

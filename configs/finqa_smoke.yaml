@@ -1,0 +1,26 @@
+# FinQA smoke audit: 16 reserve test questions, policy none, the frozen llm block.
+run_id: finqa_smoke
+split: test
+seed: 0
+task:
+  name: finqa
+  data_dir: data/finqa
+  n_steps: 2
+  n_distractors: 6
+  n_instances: {train: 8, calib: 8, test: 16}
+  offset: {test: 300}  # reserve rows 300..315 of the test half: no experiment window uses them
+  seed: 0
+llm:
+  backend: "ollama:gpt-oss:20b"
+  K: 5
+  K_prime: 10
+  temperature: 0.7
+  model_kwargs: {reasoning: low, num_ctx: 8192, num_predict: 1024}
+uq: {estimator: confidence_agreement, equivalence: numeric}
+risk: {propagation: weighted, influence: ones}
+control:
+  policy: none
+  alpha: 0.2
+  costs: {llm_call: 0.01, resample: 0.0, backtrack: 0.5, ask_human: 1.0, escalate: 10.0}
+oracle: {scope: local, p_h: 0.0, p_e: 0.0}
+limits: {max_llm_calls: 105000, max_concurrency: 4}

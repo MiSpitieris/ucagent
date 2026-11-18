@@ -1,0 +1,35 @@
+# FinQA with the mock LLM: validates the pipeline at zero calls (the mock knows every gold value).
+kind: suite
+suite_id: finqa_small_mock
+base:
+  run_id: finqa_small_mock
+  seed: 0
+  task:
+    name: finqa
+    data_dir: data/finqa
+    n_steps: 2  # nominal (most programs); linear programs of 2 to 4 operations are kept
+    n_distractors: 6  # report facts shown beside the question's supporting facts
+    n_instances: {train: 60, calib: 60, test: 60}
+    offset: {calib: 0, test: 0}
+    seed: 0
+  llm: {backend: mock, difficulty_beta: [2, 4], clean_factor: 0.2, K: 5, K_prime: 10}
+  uq: {estimator: semantic_entropy, equivalence: numeric}
+  risk: {propagation: weighted, influence: ones}
+  control:
+    alpha: 0.2
+    spending: linear
+    costs: {llm_call: 0.01, resample: 0.0, backtrack: 0.5, ask_human: 1.0, escalate: 10.0}
+    max_resamples: 1
+    max_backtracks: 1
+  oracle: {scope: local, p_h: 0.0, p_e: 0.0}
+  calibration: {method: ltt, delta: 0.1, pvalue: binomial}
+  limits: {max_llm_calls: 105000, max_concurrency: 8}
+policies:
+  none: null
+  final_gate: {kind: log, min: 0.02, max: 1.0, points: 4}
+  per_step_eps: {kind: log, min: 0.01, max: 0.5, points: 4}
+  marginal: {kind: log, min: 0.01, max: 1.0, points: 4}
+  knowno: {kind: log, min: 0.02, max: 0.5, points: 4}
+  budgeted: {kind: linear, min: 0.25, max: 2.0, points: 4}
+seeds: [0]
+splits: [calib, test]

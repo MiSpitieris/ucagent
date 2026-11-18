@@ -1,0 +1,50 @@
+# Primary: confidence-weighted agreement.
+# Confirmatory run on fresh questions (user decisions 2026-11-08 evening). Everything is frozen from the last development
+# configuration (configs/musique_wide_confagree.yaml): estimator, the 600-question calibration fit (train 0..599, replays from the cache), K = 5, K' = 10,
+# the repaired resample semantics, the consistent containment label, the wide grids, costs and the 0.2 target. Only the
+# calibration and test questions change: calibration rows 320..519 and test rows 260..459 of the seed-0 orders, which no
+# earlier run used or inspected. Predictions C1-C7 are in docs/EXPERIMENTS.md, committed before launch. Lifetime call cap
+# raised from 50,000 to 60,000 by the user for this run.
+kind: suite
+suite_id: musique_confirm2_confagree
+base:
+  run_id: musique_confirm2_confagree
+  seed: 0
+  task:
+    name: musique
+    data_dir: data/musique
+    n_steps: 2
+    n_distractors: 3
+    n_instances: {train: 600, calib: 200, test: 200}  # train indices 0..599 of the seeded order (200..599 never used before)
+    offset: {calib: 320, test: 260}  # calibration 320..519 and test 260..459 of the seeded orders: fresh for this confirmatory run
+    seed: 0
+    render_relations: true
+    local_match: contains  # per-hop labels accept whole-word containment ("Foshan, Guangdong" for "Foshan")
+    final_match: contains  # the final answer is judged by the same rule as the hops (the strict exact-match number is printed alongside)
+  llm:
+    backend: "ollama:gpt-oss:20b"
+    K: 5
+    K_prime: 10
+    temperature: 0.7
+    model_kwargs: {reasoning: low, num_ctx: 8192, num_predict: 1024}
+  uq: {estimator: confidence_agreement, equivalence: normalized_contains}
+  risk: {propagation: weighted, influence: ones}
+  control:
+    alpha: 0.2
+    spending: linear
+    costs: {llm_call: 0.01, resample: 0.0, backtrack: 0.5, ask_human: 1.0, escalate: 10.0}
+    max_resamples: 1
+    max_backtracks: 1
+  oracle: {scope: local, p_h: 0.0, p_e: 0.0}
+  calibration: {method: ltt, delta: 0.1, pvalue: binomial}
+  limits: {max_llm_calls: 60000, max_concurrency: 4}
+policies:
+  none: null
+  final_gate: {kind: linear, min: 0.05, max: 0.60, points: 12}
+  per_step_eps: {kind: linear, min: 0.02, max: 0.60, points: 30}  # widened from 0.40: the 600-question fit's levels reach 0.55
+  marginal: {kind: linear, min: 0.02, max: 0.80, points: 40}  # widened from 0.40 for the same reason
+  knowno: {kind: linear, min: 0.02, max: 0.30, points: 15}
+  budgeted: {kind: log, min: 0.5, max: 4.0, points: 9}
+  random_ask: {kind: linear, min: 0.0, max: 1.0, points: 11}
+seeds: [0]
+splits: [calib, test]

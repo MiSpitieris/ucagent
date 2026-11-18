@@ -1,0 +1,33 @@
+# Ran on the first preparation of the twowiki files (all chain relations; train sha256 d708d3b3..., dev e4af2ce5...); kept as the record of the smoke audits, it no longer matches the current files.
+# Smoke run before the 2WikiMultiHopQA queue: 16 reserve test questions (rows 2000..2015, used by no experiment
+# window), policy none, the frozen llm block. Gate: every reply has an Answer: line, none blank or truncated, output
+# under the cap; uncontrolled error between 0.10 and 0.60; every wrong hop audited for label artefacts.
+run_id: twowiki_smoke
+split: test
+seed: 0
+task:
+  name: twowiki
+  data_dir: data/twowiki
+  n_steps: 2
+  n_distractors: 3
+  n_instances: {train: 8, calib: 8, test: 16}
+  offset: {test: 2000}  # reserve rows 2000..2015 of the test half: no experiment window uses them
+  seed: 0
+  render_relations: true
+  local_match: contains
+  final_match: contains
+  canonical_dashes: true
+llm:
+  backend: "ollama:gpt-oss:20b"
+  K: 5
+  K_prime: 10
+  temperature: 0.7
+  model_kwargs: {reasoning: low, num_ctx: 8192, num_predict: 1024}
+uq: {estimator: confidence_agreement, equivalence: normalized_tokens}  # clustering follows the twowiki label rule (containment or word subsets)
+risk: {propagation: weighted, influence: ones}
+control:
+  policy: none
+  alpha: 0.2
+  costs: {llm_call: 0.01, resample: 0.0, backtrack: 0.5, ask_human: 1.0, escalate: 10.0}
+oracle: {scope: local, p_h: 0.0, p_e: 0.0}
+limits: {max_llm_calls: 105000, max_concurrency: 4}

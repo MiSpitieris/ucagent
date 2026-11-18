@@ -1,0 +1,50 @@
+# MuSiQue confirmatory run with the hyphen fix, confidence-weighted agreement (user decision of 2026-11-09, a measurement
+# correction). Identical to configs/musique_confirm2_confagree.yaml (same questions: calibration 320..519 and
+# test 260..459; same fit, estimator, grids, costs and target) except canonical_dashes: true. gpt-oss writes
+# U+2011 inside names, which the labels misread; a zero-call relabel showed the effect (docs/EXPERIMENTS.md).
+# A changed answer changes later prompts, so this reruns with new calls. Predictions X1-X3 and the re-reading
+# of C1-C10 are in docs/EXPERIMENTS.md, committed before launch. Lifetime call cap 115,000 (user decision).
+kind: suite
+suite_id: musique_confirm2d_confagree
+base:
+  run_id: musique_confirm2d_confagree
+  seed: 0
+  task:
+    name: musique
+    data_dir: data/musique
+    n_steps: 2
+    n_distractors: 3
+    n_instances: {train: 600, calib: 200, test: 200}  # train indices 0..599 of the seeded order (200..599 never used before)
+    offset: {calib: 320, test: 260}  # calibration 320..519 and test 260..459 of the seeded orders: fresh for this confirmatory run
+    seed: 0
+    render_relations: true
+    local_match: contains  # per-hop labels accept whole-word containment ("Foshan, Guangdong" for "Foshan")
+    final_match: contains  # the final answer is judged by the same rule as the hops (the strict exact-match number is printed alongside)
+    canonical_dashes: true  # the only change: Unicode hyphens read as ASCII, a hyphen also separates words in labels
+  llm:
+    backend: "ollama:gpt-oss:20b"
+    K: 5
+    K_prime: 10
+    temperature: 0.7
+    model_kwargs: {reasoning: low, num_ctx: 8192, num_predict: 1024}
+  uq: {estimator: confidence_agreement, equivalence: normalized_contains}
+  risk: {propagation: weighted, influence: ones}
+  control:
+    alpha: 0.2
+    spending: linear
+    costs: {llm_call: 0.01, resample: 0.0, backtrack: 0.5, ask_human: 1.0, escalate: 10.0}
+    max_resamples: 1
+    max_backtracks: 1
+  oracle: {scope: local, p_h: 0.0, p_e: 0.0}
+  calibration: {method: ltt, delta: 0.1, pvalue: binomial}
+  limits: {max_llm_calls: 115000, max_concurrency: 4}
+policies:
+  none: null
+  final_gate: {kind: linear, min: 0.05, max: 0.60, points: 12}
+  per_step_eps: {kind: linear, min: 0.02, max: 0.60, points: 30}  # widened from 0.40: the 600-question fit's levels reach 0.55
+  marginal: {kind: linear, min: 0.02, max: 0.80, points: 40}  # widened from 0.40 for the same reason
+  knowno: {kind: linear, min: 0.02, max: 0.30, points: 15}
+  budgeted: {kind: log, min: 0.5, max: 4.0, points: 9}
+  random_ask: {kind: linear, min: 0.0, max: 1.0, points: 11}
+seeds: [0]
+splits: [calib, test]

@@ -1,0 +1,52 @@
+# Three-hop linear chains, consistent final label: the configs/musique_3hop_gptoss.yaml suite replayed from the response cache with the final label made
+# consistent with the per-hop labels (user decision 2026-11-08). Only `final_match: contains` and the suite id differ,
+# so every prompt, sample and controller decision replays unchanged at zero model calls (launch it with the call cap
+# equal to the cache counter so that any real call fails loudly); what changes is `final_correct`, hence the
+# Learn-then-Test certificates and the error curves. Why: a human check on a hop accepts a verbose-but-right answer
+# ("Greenfield, Indiana" for "Greenfield"), and under exact match the same answer at the final hop counted as a
+# failure that no step-level control could catch (27 of the 46 wrong test trajectories at the ask-on-disagreement
+# point of the medium run). The strict exact-match error is still printed by scripts/real_results.py.
+kind: suite
+suite_id: musique_3hop_contains
+base:
+  run_id: musique_3hop_contains
+  seed: 0
+  task:
+    name: musique
+    data_dir: data/musique
+    n_steps: 3
+    hops: [3]
+    linear_only: true  # MuSiQue's 3hop1 type: hop k references only hop k-1, which the on-track test assumes
+    n_distractors: 3
+    n_instances: {train: 60, calib: 60, test: 60}
+    seed: 0
+    render_relations: true
+    local_match: contains  # per-hop labels accept whole-word containment ("Foshan, Guangdong" for "Foshan")
+    final_match: contains  # the final answer is judged by the same rule as the hops (the strict exact-match number is printed alongside)
+  llm:
+    backend: "ollama:gpt-oss:20b"
+    K: 5
+    K_prime: 10
+    temperature: 0.7
+    model_kwargs: {reasoning: low, num_ctx: 8192, num_predict: 1024}
+  uq: {estimator: semantic_entropy, equivalence: normalized_contains}
+  risk: {propagation: weighted, influence: ones}
+  control:
+    alpha: 0.2
+    spending: linear
+    costs: {llm_call: 0.01, resample: 0.0, backtrack: 0.5, ask_human: 1.0, escalate: 10.0}
+    max_resamples: 1
+    max_backtracks: 1
+  oracle: {scope: local, p_h: 0.0, p_e: 0.0}
+  calibration: {method: ltt, delta: 0.1, pvalue: binomial}
+  limits: {max_llm_calls: 50000, max_concurrency: 4}
+policies:
+  none: null
+  final_gate: {kind: linear, min: 0.05, max: 0.60, points: 12}
+  per_step_eps: {kind: linear, min: 0.02, max: 0.40, points: 20}
+  marginal: {kind: linear, min: 0.02, max: 0.40, points: 20}
+  knowno: {kind: linear, min: 0.02, max: 0.30, points: 15}
+  budgeted: {kind: log, min: 0.5, max: 4.0, points: 9}
+  random_ask: {kind: linear, min: 0.0, max: 1.0, points: 11}
+seeds: [0]
+splits: [calib, test]

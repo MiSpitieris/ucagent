@@ -1,0 +1,51 @@
+# Experiment B baseline: semantic entropy at K = 5 under the repaired resample semantics (user decisions 2026-11-08).
+# Same 200/200/200 questions, grids, offsets, costs and target as configs/musique_medium_contains.yaml, run under the
+# repaired resample semantics of 2026-11-08 (a resample expands the batch from K = 5 to K' = 10 under the same prompt and
+# is calibrated by batch size; review findings R1 and R2). The expansion draws indices 5..9 of the step's prompt, which the
+# K = 10 run already cached for every hop-1 prompt and for the hop-2 prompts whose ten-sample commit equals the five-sample
+# one, so the run is expected to need few new calls (bounded by new hop-2 contexts and gold-context prompts after new asks).
+# Expected: the ask-only Learn-then-Test selections of musique_medium_contains at alpha = 0.2 are reproduced (B7); the
+# resample-using points (budgeted; marginal at low knobs) change and are reported as the new program's.
+kind: suite
+suite_id: musique_medium_entropy_v2
+base:
+  run_id: musique_medium_entropy_v2
+  seed: 0
+  task:
+    name: musique
+    data_dir: data/musique
+    n_steps: 2
+    n_distractors: 3
+    n_instances: {train: 200, calib: 200, test: 200}
+    offset: {calib: 120, test: 60}  # calibration 120..319 and test 60..259 of the seeded orders: never run, never inspected
+    seed: 0
+    render_relations: true
+    local_match: contains  # per-hop labels accept whole-word containment ("Foshan, Guangdong" for "Foshan")
+    final_match: contains  # the final answer is judged by the same rule as the hops (the strict exact-match number is printed alongside)
+  llm:
+    backend: "ollama:gpt-oss:20b"
+    K: 5
+    K_prime: 10
+    temperature: 0.7
+    model_kwargs: {reasoning: low, num_ctx: 8192, num_predict: 1024}
+  uq: {estimator: semantic_entropy, equivalence: normalized_contains}
+  risk: {propagation: weighted, influence: ones}
+  control:
+    alpha: 0.2
+    spending: linear
+    costs: {llm_call: 0.01, resample: 0.0, backtrack: 0.5, ask_human: 1.0, escalate: 10.0}
+    max_resamples: 1
+    max_backtracks: 1
+  oracle: {scope: local, p_h: 0.0, p_e: 0.0}
+  calibration: {method: ltt, delta: 0.1, pvalue: binomial}
+  limits: {max_llm_calls: 50000, max_concurrency: 4}
+policies:
+  none: null
+  final_gate: {kind: linear, min: 0.05, max: 0.60, points: 12}
+  per_step_eps: {kind: linear, min: 0.02, max: 0.40, points: 20}
+  marginal: {kind: linear, min: 0.02, max: 0.40, points: 20}
+  knowno: {kind: linear, min: 0.02, max: 0.30, points: 15}
+  budgeted: {kind: log, min: 0.5, max: 4.0, points: 9}
+  random_ask: {kind: linear, min: 0.0, max: 1.0, points: 11}
+seeds: [0]
+splits: [calib, test]

@@ -1,0 +1,49 @@
+# Confirmatory certification pass with gpt-oss:20b (M12, after the review of report v0.3).
+# The development run (configs/musique_small_gptoss.yaml) was calibrated on questions that had also
+# informed the prompt layout, the label rule and the grid widths. This pass keeps the code, prompts,
+# model options and test questions fixed, certifies pre-specified finer grids on 60 fresh calibration
+# questions (offset 60 of the calibration order; the first 60 were the development set), and reads
+# the same test split only at the selected knobs. The train split is unchanged, so the artifact fit
+# replays from the cache. The grids below were written before any fresh calibration data existed.
+kind: suite
+suite_id: musique_confirm_gptoss
+base:
+  run_id: musique_confirm_gptoss
+  seed: 0
+  task:
+    name: musique
+    data_dir: data/musique
+    n_steps: 2
+    n_distractors: 3
+    n_instances: {train: 60, calib: 60, test: 60}
+    offset: {calib: 60}  # calibration questions 60..119 of the seeded order: never seen before this pass
+    seed: 0
+    render_relations: true
+    local_match: contains  # per-hop labels accept whole-word containment ("Foshan, Guangdong" for "Foshan"); the final answer stays exact match
+  llm:
+    backend: "ollama:gpt-oss:20b"
+    K: 5
+    K_prime: 10
+    temperature: 0.7
+    model_kwargs: {reasoning: low, num_ctx: 8192, num_predict: 1024}
+  uq: {estimator: semantic_entropy, equivalence: normalized_contains}
+  risk: {propagation: weighted, influence: ones}
+  control:
+    alpha: 0.2
+    spending: linear
+    costs: {llm_call: 0.01, resample: 0.0, backtrack: 0.5, ask_human: 1.0, escalate: 10.0}
+    max_resamples: 1
+    max_backtracks: 1
+  oracle: {scope: local, p_h: 0.0, p_e: 0.0}
+  calibration: {method: ltt, delta: 0.1, pvalue: binomial}
+  limits: {max_llm_calls: 50000, max_concurrency: 4}
+policies:
+  none: null
+  final_gate: {kind: linear, min: 0.05, max: 0.60, points: 12}
+  per_step_eps: {kind: linear, min: 0.02, max: 0.40, points: 20}
+  marginal: {kind: linear, min: 0.02, max: 0.40, points: 20}
+  knowno: {kind: linear, min: 0.02, max: 0.30, points: 15}
+  budgeted: {kind: log, min: 0.5, max: 4.0, points: 9}
+  random_ask: {kind: linear, min: 0.0, max: 1.0, points: 11}
+seeds: [0]
+splits: [calib, test]

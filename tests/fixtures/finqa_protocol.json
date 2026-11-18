@@ -1,0 +1,195 @@
+[
+ {
+  "id": "AAA/2018/page_10.pdf-1",
+  "pre_text": [
+   "the following table shows revenue and costs for the two years ."
+  ],
+  "post_text": [
+   "costs rose with the opening of two new sites in the year ."
+  ],
+  "table": [
+   [
+    "( in millions )",
+    "2018",
+    "2017"
+   ],
+   [
+    "revenue",
+    "$ 5829",
+    "$ 5735"
+   ],
+   [
+    "costs",
+    "$ 4100",
+    "$ 4000"
+   ],
+   [
+    "staff",
+    "310",
+    "295"
+   ]
+  ],
+  "qa": {
+   "question": "what was the percentage change in revenue from 2017 to 2018?",
+   "program": "subtract(5829, 5735), divide(#0, 5735)",
+   "exe_ans": 0.01639,
+   "answer": "1.6%",
+   "gold_inds": {
+    "table_1": "( in millions ) the revenue of 2018 is $ 5829 ; the revenue of 2017 is $ 5735 ;"
+   }
+  }
+ },
+ {
+  "id": "BBB/2017/page_20.pdf-2",
+  "pre_text": [
+   "the maturity date for $ 30 million of the senior credit facility is october 24 , 2017 .",
+   "the maturity date for $ 164 million of the senior credit facility is october 24 , 2018 .",
+   "the facility was amended twice during the year without a change of its covenants ."
+  ],
+  "post_text": [],
+  "table": [],
+  "qa": {
+   "question": "what percentage increase occurred from the first to the second maturity of the senior credit facility?",
+   "program": "subtract(164, 30), divide(#0, 30), multiply(#1, const_100)",
+   "exe_ans": 446.66667,
+   "answer": "446.7%",
+   "gold_inds": {
+    "text_0": "the maturity date for $ 30 million of the senior credit facility is october 24 , 2017 .",
+    "text_1": "the maturity date for $ 164 million of the senior credit facility is october 24 , 2018 ."
+   }
+  }
+ },
+ {
+  "id": "CCC/2016/page_30.pdf-1",
+  "pre_text": [
+   "the company paid $ 35000000 in each of the two years and $ 5000000 in fees to the former shareholders .",
+   "the payments were funded from cash on hand and are not tax deductible ."
+  ],
+  "post_text": [],
+  "table": [],
+  "qa": {
+   "question": "what is the total paid to the former shareholders in dollars?",
+   "program": "add(35000000, 35000000), add(#0, 5000000)",
+   "exe_ans": 75000000.0,
+   "answer": "75000000",
+   "gold_inds": {
+    "text_0": "the company paid $ 35000000 in each of the two years and $ 5000000 in fees to the former shareholders ."
+   }
+  }
+ },
+ {
+  "id": "DDD/2010/page_40.pdf-3",
+  "pre_text": [
+   "the following table shows the market value of our fixed maturities at december 31 , 2010 and 2009 ."
+  ],
+  "post_text": [],
+  "table": [
+   [
+    "( in millions except percentages )",
+    "2010 market value",
+    "2010 percentage of total",
+    "2010 market value",
+    "percentage of total"
+   ],
+   [
+    "treasury",
+    "$ 2075",
+    "4.51% ( 4.51 % )",
+    "$ 2068",
+    "3.15% ( 3.15 % )"
+   ],
+   [
+    "agency",
+    "2015",
+    "4% ( 4 % )",
+    "2698",
+    "6% ( 6 % )"
+   ]
+  ],
+  "qa": {
+   "question": "what is the percentage change in the balance of treasury in 2010?",
+   "program": "subtract(2075, 2068), divide(#0, 2068)",
+   "exe_ans": 0.00338,
+   "answer": "0.3%",
+   "gold_inds": {
+    "table_1": "( in millions except percentages ) the treasury of 2010 market value is $ 2075 ; the treasury of 2010 percentage of total is 4.51% ( 4.51 % ) ; the treasury of 2010 market value is $ 2068 ; the treasury of percentage of total is 3.15% ( 3.15 % ) ;"
+   }
+  }
+ },
+ {
+  "id": "DDD/2010/page_40.pdf-4",
+  "pre_text": [
+   "the following table shows the market value of our fixed maturities at december 31 , 2010 and 2009 ."
+  ],
+  "post_text": [],
+  "table": [
+   [
+    "( in millions except percentages )",
+    "2010 market value",
+    "2010 percentage of total",
+    "2010 market value",
+    "percentage of total"
+   ],
+   [
+    "treasury",
+    "$ 2075",
+    "4.51% ( 4.51 % )",
+    "$ 2068",
+    "3.15% ( 3.15 % )"
+   ],
+   [
+    "agency",
+    "2015",
+    "4% ( 4 % )",
+    "2698",
+    "6% ( 6 % )"
+   ]
+  ],
+  "qa": {
+   "question": "by how many percentage points did the share of treasury change , relative to the earlier share?",
+   "program": "subtract(4.51, 3.15), divide(#0, 3.15)",
+   "exe_ans": 0.43175,
+   "answer": "43.2%",
+   "gold_inds": {
+    "table_1": "( in millions except percentages ) the treasury of 2010 market value is $ 2075 ; the treasury of 2010 percentage of total is 4.51% ( 4.51 % ) ; the treasury of 2010 market value is $ 2068 ; the treasury of percentage of total is 3.15% ( 3.15 % ) ;"
+   }
+  }
+ },
+ {
+  "id": "EEE/2006/page_50.pdf-2",
+  "pre_text": [
+   "the plan paid $ 1390 thousand in the period .",
+   "the plan paid $ 15244 thousand in the period .",
+   "the plan is closed to new entrants and is funded annually ."
+  ],
+  "post_text": [],
+  "table": [],
+  "qa": {
+   "question": "what was the total paid by the plan in the two periods , in thousands?",
+   "program": "add(1390, 15244), divide(#0, const_2)",
+   "exe_ans": 8317.0,
+   "answer": "8317",
+   "gold_inds": {
+    "text_0": "the plan paid $ 1390 thousand in the period .",
+    "text_1": "the plan paid $ 15244 thousand in the period ."
+   }
+  }
+ },
+ {
+  "id": "FFF/2012/page_60.pdf-1",
+  "pre_text": [
+   "the fee was $ 5 for each of the 200 accounts and the plan held 1000 accounts in total ."
+  ],
+  "post_text": [],
+  "table": [],
+  "qa": {
+   "question": "what share of a dollar is the fee per account and per thousand accounts?",
+   "program": "divide(5, 200), divide(#0, 1000)",
+   "exe_ans": 2e-05,
+   "answer": "0.00003",
+   "gold_inds": {
+    "text_0": "the fee was $ 5 for each of the 200 accounts and the plan held 1000 accounts in total ."
+   }
+  }
+ }
+]

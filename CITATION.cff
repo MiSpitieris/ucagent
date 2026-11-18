@@ -1,0 +1,11 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite it as below."
+title: "ucagent: calibrated, cost-aware control of multi-step LLM agents"
+authors:
+  - family-names: Spitieris
+    given-names: Michail
+    affiliation: SINTEF
+version: 0.2.0
+date-released: 2026-11-08
+license: MIT
+repository-code: "https://github.com/MiSpitieris/ucagent"

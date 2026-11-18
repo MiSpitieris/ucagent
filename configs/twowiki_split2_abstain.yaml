@@ -1,0 +1,43 @@
+# Abstention baseline on 2WikiMultiHopQA split 2 (development; after the external review of 2026-11-09): ask a
+# human at a step whose committed answer says it cannot answer (ABSTAIN_PATTERN in core/control/policies.py,
+# the review's diagnostic pattern, found after these runs). Same questions, fit and settings as
+# configs/twowiki_split2_confagree.yaml; every prompt the rule can trigger is cached, so it runs at zero calls.
+kind: suite
+suite_id: twowiki_split2_abstain
+base:
+  run_id: twowiki_split2_abstain
+  seed: 0
+  task:
+    name: twowiki
+    data_dir: data/twowiki
+    n_steps: 2
+    n_distractors: 3
+    n_instances: {train: 600, calib: 200, test: 200}  # train pool rows 0..599 of the seeded order (the fit)
+    offset: {calib: 200, test: 200}  # windows 200..399 of the seeded calibration and test halves
+    seed: 0
+    render_relations: true
+    local_match: contains  # whole-word containment, plus the task's date-aware rule for date-valued gold
+    final_match: contains  # the final answer is judged by the same rule as the hops
+    canonical_dashes: true  # Unicode hyphens as ASCII; a hyphen also separates words when labels are matched (smoke audit)
+  llm:
+    backend: "ollama:gpt-oss:20b"
+    K: 5
+    K_prime: 10
+    temperature: 0.7
+    model_kwargs: {reasoning: low, num_ctx: 8192, num_predict: 1024}
+  uq: {estimator: confidence_agreement, equivalence: normalized_tokens}  # clustering follows the twowiki label rule (containment or word subsets)
+  risk: {propagation: weighted, influence: ones}
+  control:
+    alpha: 0.2
+    spending: linear
+    costs: {llm_call: 0.01, resample: 0.0, backtrack: 0.5, ask_human: 1.0, escalate: 10.0}
+    max_resamples: 1
+    max_backtracks: 1
+  oracle: {scope: local, p_h: 0.0, p_e: 0.0}
+  calibration: {method: ltt, delta: 0.1, pvalue: binomial}
+  limits: {max_llm_calls: 105000, max_concurrency: 4}
+policies:
+  none: null
+  abstain_ask: {kind: linear, min: 0.0, max: 0.0, points: 1}  # no knob: one point
+seeds: [0]
+splits: [calib, test]

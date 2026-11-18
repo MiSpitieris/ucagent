@@ -1,0 +1,25 @@
+# Milestone M4 real-LLM run: small, local, cached. Run on 2026-11-07 (user go). The call cap is a lifetime cap per cache file.
+run_id: real_small_ollama
+split: test
+seed: 0
+task:
+  name: synthetic_chain
+  n_steps: 3
+  ambiguity: {global: 0.5}
+  distractors: 3
+  reconvergence: {global: 0.0}
+  n_instances: {train: 30, calib: 30, test: 30}
+  seed: 0
+llm:
+  backend: "ollama:llama3.1:8b"
+  K: 5
+  K_prime: 10
+  temperature: 0.7
+uq: {estimator: semantic_entropy, equivalence: normalized_exact}
+risk: {propagation: weighted, influence: ones}
+control:
+  policy: none
+  alpha: 0.1
+  costs: {llm_call: 0.01, resample: 0.0, backtrack: 0.5, ask_human: 1.0, escalate: 10.0}
+oracle: {scope: local, p_h: 0.0, p_e: 0.0}
+limits: {max_llm_calls: 20000, max_concurrency: 4}

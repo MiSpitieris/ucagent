@@ -1,0 +1,50 @@
+# 2WikiMultiHopQA two-hop chains, confidence-weighted agreement: split 3, fresh questions that pass the data filter
+# (user decisions of 2026-11-09: an automatic filter decided before the run; lifetime call cap 115,000).
+# Identical to configs/twowiki_confagree.yaml except the calibration and test windows, which list the first
+# 200 unused questions of each seeded half on which ucagent.tasks.twowiki.question_flags finds nothing
+# (configs/twowiki_split3_windows.yaml). The 600-question fit is unchanged and replays from the cache.
+# Predictions V1-V6 are in docs/EXPERIMENTS.md, committed before launch.
+kind: suite
+suite_id: twowiki_split3_confagree
+base:
+  run_id: twowiki_split3_confagree
+  seed: 0
+  task:
+    name: twowiki
+    data_dir: data/twowiki
+    n_steps: 2
+    n_distractors: 3
+    n_instances: {train: 600, calib: 200, test: 200}  # train pool rows 0..599 of the seeded order (the fit)
+    windows_file: configs/twowiki_split3_windows.yaml  # fresh questions that pass the data filter (scripts/make_twowiki_split3.py)
+    seed: 0
+    render_relations: true
+    local_match: contains  # whole-word containment, plus the task's date-aware rule for date-valued gold
+    final_match: contains  # the final answer is judged by the same rule as the hops
+    canonical_dashes: true  # Unicode hyphens as ASCII; a hyphen also separates words when labels are matched (smoke audit)
+  llm:
+    backend: "ollama:gpt-oss:20b"
+    K: 5
+    K_prime: 10
+    temperature: 0.7
+    model_kwargs: {reasoning: low, num_ctx: 8192, num_predict: 1024}
+  uq: {estimator: confidence_agreement, equivalence: normalized_tokens}  # clustering follows the twowiki label rule (containment or word subsets)
+  risk: {propagation: weighted, influence: ones}
+  control:
+    alpha: 0.2
+    spending: linear
+    costs: {llm_call: 0.01, resample: 0.0, backtrack: 0.5, ask_human: 1.0, escalate: 10.0}
+    max_resamples: 1
+    max_backtracks: 1
+  oracle: {scope: local, p_h: 0.0, p_e: 0.0}
+  calibration: {method: ltt, delta: 0.1, pvalue: binomial}
+  limits: {max_llm_calls: 115000, max_concurrency: 4}
+policies:
+  none: null
+  final_gate: {kind: linear, min: 0.05, max: 0.60, points: 12}
+  per_step_eps: {kind: linear, min: 0.02, max: 0.60, points: 30}  # widened from 0.40: the 600-question fit's levels reach 0.55
+  marginal: {kind: linear, min: 0.02, max: 0.80, points: 40}  # widened from 0.40 for the same reason
+  knowno: {kind: linear, min: 0.02, max: 0.30, points: 15}
+  budgeted: {kind: log, min: 0.5, max: 4.0, points: 9}
+  random_ask: {kind: linear, min: 0.0, max: 1.0, points: 11}
+seeds: [0]
+splits: [calib, test]

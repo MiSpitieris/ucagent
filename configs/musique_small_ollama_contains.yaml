@@ -1,0 +1,41 @@
+# The llama3.1:8b pass-2 suite replayed with containment per-hop labels (M12), so the two models are
+# compared under the same label rule as configs/musique_small_gptoss.yaml. Prompts are byte-identical
+# to the archived pass 2 (render_relations false), so the replay comes from the cache; only the labels,
+# the on-track decisions and therefore the calibration and the local oracle's corrections can differ.
+# The strict record in results/musique_small_ollama/ is kept unchanged.
+kind: suite
+suite_id: musique_small_ollama_contains
+base:
+  run_id: musique_small_ollama_contains
+  seed: 0
+  task:
+    name: musique
+    data_dir: data/musique
+    n_steps: 2
+    n_distractors: 3
+    n_instances: {train: 60, calib: 60, test: 60}
+    seed: 0
+    render_relations: false  # the archived runs used the raw 'X >> relation' templates (pinned for byte-identical prompts)
+    local_match: contains  # the only change from configs/musique_small_ollama.yaml
+  llm: {backend: "ollama:llama3.1:8b", K: 5, K_prime: 10, temperature: 0.7}
+  uq: {estimator: semantic_entropy, equivalence: normalized_contains}
+  risk: {propagation: weighted, influence: ones}
+  control:
+    alpha: 0.2
+    spending: linear
+    costs: {llm_call: 0.01, resample: 0.0, backtrack: 0.5, ask_human: 1.0, escalate: 10.0}
+    max_resamples: 1
+    max_backtracks: 1
+  oracle: {scope: local, p_h: 0.0, p_e: 0.0}
+  calibration: {method: ltt, delta: 0.1, pvalue: binomial}
+  limits: {max_llm_calls: 50000, max_concurrency: 4}
+policies:
+  none: null
+  final_gate: {kind: linear, min: 0.1, max: 1.0, points: 10}
+  per_step_eps: {kind: linear, min: 0.1, max: 1.0, points: 10}
+  marginal: {kind: linear, min: 0.1, max: 1.0, points: 10}
+  knowno: {kind: linear, min: 0.05, max: 0.95, points: 10}
+  budgeted: {kind: log, min: 0.25, max: 16.0, points: 7}
+  random_ask: {kind: linear, min: 0.0, max: 1.0, points: 11}
+seeds: [0]
+splits: [calib, test]

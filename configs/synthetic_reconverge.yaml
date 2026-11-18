@@ -1,0 +1,33 @@
+# Heterogeneous influence by design: a wrong path reconverges with probability rho_i (H2 testbed).
+kind: suite
+suite_id: synthetic_reconverge
+base:
+  run_id: synthetic_reconverge
+  seed: 0
+  task:
+    name: synthetic_chain
+    n_steps: 5
+    ambiguity: {global: 0.5}
+    distractors: 3
+    reconvergence: {per_hop: [0.5, 0.5, 0.25, 0.0, 0.0]}
+    n_instances: {train: 100, calib: 100, test: 100}
+    seed: 0
+  llm: {backend: mock, difficulty_beta: [2, 4], clean_factor: 0.2, K: 10, K_prime: 20}
+  uq: {estimator: semantic_entropy, equivalence: normalized_exact}
+  risk: {propagation: weighted, influence: counterfactual}
+  control:
+    alpha: 0.1
+    spending: influence_proportional
+    costs: {llm_call: 0.01, resample: 0.0, backtrack: 0.5, ask_human: 1.0, escalate: 10.0}
+    max_resamples: 1
+    max_backtracks: 1
+  oracle: {scope: local, p_h: 0.0, p_e: 0.0}
+  calibration: {method: ltt, delta: 0.1, pvalue: binomial}
+  limits: {max_concurrency: 8}
+policies:
+  none: null
+  per_step_eps: {kind: log, min: 0.005, max: 0.5, points: 6}
+  marginal: {kind: log, min: 0.005, max: 1.0, points: 6}
+  budgeted: {kind: linear, min: 0.25, max: 2.0, points: 6}
+seeds: [0]
+splits: [calib, test]

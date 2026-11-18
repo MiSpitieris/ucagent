@@ -1,0 +1,48 @@
+# finqa2_confagree again with the repaired effect model of the value-of-intervention rule and the budgeted controller
+# (owner's decision of 2026-11-17; docs/DECISIONS.md and docs/EXPERIMENTS.md of that date). Identical to
+# configs/finqa2_confagree.yaml except the suite id and the run id. A change of code ends a resume, so the whole suite is
+# replayed from the response cache; every controller but those two has to reproduce the recorded suite
+# (prediction Q1, scripts/replay_check.py). No model call is planned: the replay runs with the call limit at the
+# current counter, so a request the cache lacks stops it. Predictions Q1-Q10 are in docs/EXPERIMENTS.md,
+# committed before the replay.
+kind: suite
+suite_id: fx_finqa2_confagree
+base:
+  run_id: fx_finqa2_confagree
+  seed: 0
+  task:
+    name: finqa
+    data_dir: data/finqa
+    n_steps: 2  # nominal (most programs); linear programs of 2 to 4 operations are kept
+    n_distractors: 6  # report facts shown beside the question's supporting facts
+    n_instances: {train: 600, calib: 200, test: 200}  # train: the fit pool; calib and test: seeded halves of dev + test
+    offset: {calib: 0, test: 0}
+    seed: 0
+    protocol: 2  # the only change of the task: the repaired label rule, reviewer and descriptions
+  llm:
+    backend: "ollama:gpt-oss:20b"
+    K: 5
+    K_prime: 10
+    temperature: 0.7
+    model_kwargs: {reasoning: low, num_ctx: 8192, num_predict: 1024}
+  uq: {estimator: confidence_agreement, equivalence: numeric}  # numbers within 1 % are one answer
+  risk: {propagation: weighted, influence: ones}
+  control:
+    alpha: 0.2
+    spending: linear
+    costs: {llm_call: 0.01, resample: 0.0, backtrack: 0.5, ask_human: 1.0, escalate: 10.0}
+    max_resamples: 1
+    max_backtracks: 1
+  oracle: {scope: local, p_h: 0.0, p_e: 0.0}
+  calibration: {method: ltt, delta: 0.1, pvalue: binomial}
+  limits: {max_llm_calls: 109000, max_concurrency: 4}  # the ceiling of this rerun on the lifetime counter
+policies:
+  none: null
+  final_gate: {kind: linear, min: 0.05, max: 0.60, points: 12}
+  per_step_eps: {kind: linear, min: 0.02, max: 0.60, points: 30}  # widened from 0.40: the 600-question fit's levels reach 0.55
+  marginal: {kind: linear, min: 0.02, max: 0.80, points: 40}  # widened from 0.40 for the same reason
+  knowno: {kind: linear, min: 0.02, max: 0.30, points: 15}
+  budgeted: {kind: log, min: 0.5, max: 4.0, points: 9}
+  random_ask: {kind: linear, min: 0.0, max: 1.0, points: 11}
+seeds: [0]
+splits: [calib, test]

@@ -1,0 +1,29 @@
+# Smoke test before the gpt-oss:20b suite (M12): the suite's first 8 test questions, policy none,
+# same llm block, so its 80 calls are reused by configs/musique_small_gptoss.yaml. Checks the
+# output format, the thinking separation and the call rate (timing gate in docs/EXPERIMENTS.md).
+run_id: musique_smoke_gptoss
+split: test
+seed: 0
+task:
+  name: musique
+  data_dir: data/musique
+  n_steps: 2
+  n_distractors: 3
+  n_instances: {train: 8, calib: 8, test: 8}
+  seed: 0
+  render_relations: true
+  local_match: contains
+llm:
+  backend: "ollama:gpt-oss:20b"
+  K: 5
+  K_prime: 10
+  temperature: 0.7
+  model_kwargs: {reasoning: low, num_ctx: 8192, num_predict: 1024}
+uq: {estimator: semantic_entropy, equivalence: normalized_contains}
+risk: {propagation: weighted, influence: ones}
+control:
+  policy: none
+  alpha: 0.2
+  costs: {llm_call: 0.01, resample: 0.0, backtrack: 0.5, ask_human: 1.0, escalate: 10.0}
+oracle: {scope: local, p_h: 0.0, p_e: 0.0}
+limits: {max_llm_calls: 50000, max_concurrency: 4}
